@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.cache/
+out/
+*.log
+.DS_Store
+.env*.local
+package-lock.json
