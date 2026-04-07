@@ -22,7 +22,11 @@ export default function FileUpload({ onTextExtracted }: Props) {
       try {
         const form = new FormData();
         form.append("file", file);
-        const res = await fetch("/api/extract-text", { method: "POST", body: form });
+        const res = await fetch("/api/extract-text", {
+          method: "POST",
+          body: form,
+          headers: { "x-requested-with": "XMLHttpRequest" },
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Upload failed");
         if (!data.text?.trim()) throw new Error("No text content found in file");

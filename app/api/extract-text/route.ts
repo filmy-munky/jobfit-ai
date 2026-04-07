@@ -1,60 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
-const TEXT_EXTENSIONS = new Set([
-  ".txt", ".md", ".mdx", ".rst", ".csv", ".json", ".xml",
-  ".html", ".htm", ".yaml", ".yml", ".toml", ".ini", ".cfg",
-  ".log", ".rtf",
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+const ALLOWED_EXTENSIONS = new Set([
+  ".pdf", ".docx", ".txt", ".md", ".mdx", ".rst",
+  ".csv", ".json", ".xml", ".yaml", ".yml", ".toml", ".rtf",
 ]);
 
 export async function POST(req: NextRequest) {
+  // CSRF check: reject requests without the custom header
+  if (req.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  // File size limit
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { error: "File too large. Maximum size is 10 MB." },
+      { status: 413 },
+    );
+  }
+
   const name = file.name.toLowerCase();
   const ext = "." + (name.split(".").pop() ?? "");
+
+  // Server-side file type allowlist
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    return NextResponse.json(
+      { error: "Unsupported file type. Accepted: .pdf, .docx, .txt, .md, .csv, .json, .yaml, .rtf" },
+      { status: 400 },
+    );
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
   let text = "";
 
   try {
     if (ext === ".pdf") {
-      // pdf-parse
       const mod = await import("pdf-parse");
       const parse = typeof mod === "function" ? mod : (mod as any).default ?? mod;
       const data = await parse(buffer);
       text = data.text ?? "";
     } else if (ext === ".docx") {
-      // mammoth
       const mammoth = await import("mammoth");
       const extractFn =
         typeof mammoth.extractRawText === "function"
           ? mammoth.extractRawText
           : (mammoth as any).default?.extractRawText;
-      if (!extractFn) throw new Error("mammoth module could not be loaded");
+      if (!extractFn) throw new Error("module load failure");
       const result = await extractFn({ buffer });
       text = result.value ?? "";
-    } else if (TEXT_EXTENSIONS.has(ext)) {
-      text = buffer.toString("utf-8");
     } else {
-      // Try reading as UTF-8 text anyway — covers any text-based format
-      const candidate = buffer.toString("utf-8");
-      // Check if it's actually text (no null bytes in first 8KB)
-      const sample = candidate.slice(0, 8192);
-      if (sample.includes("\0")) {
-        return NextResponse.json(
-          { error: `Unsupported binary format: ${ext}. Please use .pdf, .docx, .txt, .md, .csv, .json, or any text file.` },
-          { status: 400 },
-        );
-      }
-      text = candidate;
+      text = buffer.toString("utf-8");
     }
-  } catch (e) {
+  } catch {
     return NextResponse.json(
-      { error: `Failed to parse file: ${(e as Error).message}` },
+      { error: "Failed to parse file. Please try a different format." },
       { status: 422 },
     );
   }

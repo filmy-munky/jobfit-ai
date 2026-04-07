@@ -132,7 +132,7 @@ class AnthropicProvider implements LLMProvider {
         messages: [{ role: "user", content: user }],
       }),
     });
-    if (!res.ok) throw new Error(`anthropic ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error("Anthropic request failed");
     const data = await res.json();
     return (data.content || [])
       .map((b: { text?: string }) => b.text || "")
@@ -155,7 +155,7 @@ class AnthropicProvider implements LLMProvider {
         stream: true,
       }),
     });
-    if (!res.ok || !res.body) throw new Error(`anthropic ${res.status}`);
+    if (!res.ok || !res.body) throw new Error("Anthropic streaming failed");
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = "";
@@ -201,15 +201,30 @@ class OpenAIProvider implements LLMProvider {
         ],
       }),
     });
-    if (!res.ok) throw new Error(`openai ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error("OpenAI request failed");
     const data = await res.json();
     return data.choices?.[0]?.message?.content ?? "";
   }
 }
 
 class OllamaProvider implements LLMProvider {
-  private host = process.env.OLLAMA_HOST || "http://localhost:11434";
+  private host: string;
   private model = process.env.OLLAMA_MODEL || "llama3.1";
+
+  constructor() {
+    const h = process.env.OLLAMA_HOST || "http://localhost:11434";
+    // SSRF protection: only allow localhost
+    try {
+      const url = new URL(h);
+      if (!["localhost", "127.0.0.1", "::1"].includes(url.hostname)) {
+        throw new Error("OLLAMA_HOST must point to localhost");
+      }
+    } catch (e) {
+      if ((e as Error).message.includes("OLLAMA_HOST")) throw e;
+      throw new Error("Invalid OLLAMA_HOST URL");
+    }
+    this.host = h;
+  }
 
   async complete(system: string, user: string): Promise<string> {
     const res = await fetch(`${this.host}/api/chat`, {
@@ -224,7 +239,7 @@ class OllamaProvider implements LLMProvider {
         stream: false,
       }),
     });
-    if (!res.ok) throw new Error(`ollama ${res.status}`);
+    if (!res.ok) throw new Error("Ollama request failed");
     const data = await res.json();
     return data.message?.content ?? "";
   }

@@ -4,5 +4,7 @@ node_modules/
 out/
 *.log
 .DS_Store
-.env*.local
+.env*
+!.env.example
 package-lock.json
+.vercel
