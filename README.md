@@ -1,5 +1,7 @@
 # jobfit-ai — Resume ↔ Job description fit analyzer
 
+![Hero](screenshots/01-hero.png)
+
 Paste a resume and a job description. Get back:
 
 - A **fit score** (0–100) based on semantic similarity between resume and JD
@@ -31,6 +33,16 @@ in the language the hiring team actually used.
 - **Pluggable LLM** — `anthropic`, `openai`, `ollama`, or `mock` (deterministic
   templated output for offline runs).
 - **Streaming UI** — narrative and rewrites stream in as the model emits them.
+
+## Screenshots
+
+| Analysis Results | Requirement Breakdown |
+|---|---|
+| ![Results](screenshots/03-results-score.png) | ![Requirements](screenshots/04-requirements.png) |
+
+| Resume Realignment |
+|---|
+| ![Realign](screenshots/05-realign-cta.png) |
 
 ## Quick start
 
