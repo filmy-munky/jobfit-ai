@@ -1,5 +1,10 @@
 # jobfit-ai — Resume ↔ Job description fit analyzer
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-jobfit--ai-black?style=for-the-badge&logo=vercel)](https://jobfit-ai-tau.vercel.app)
+[![GitHub](https://img.shields.io/badge/GitHub-Source-181717?style=for-the-badge&logo=github)](https://github.com/filmy-munky/jobfit-ai)
+
+> **[Try it live](https://jobfit-ai-tau.vercel.app)** — no sign-up required, runs in your browser.
+
 ![Hero](screenshots/01-hero.png)
 
 Paste a resume and a job description. Get back:
